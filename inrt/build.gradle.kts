@@ -7,6 +7,10 @@ plugins {
     id("kotlin-android-extensions")
 }
 
+repositories {
+    maven("https://jitpack.io")
+}
+
 val propFile: File = rootProject.file("keystores/sign.properties")
 val properties = Properties()
 if (propFile.exists()) {

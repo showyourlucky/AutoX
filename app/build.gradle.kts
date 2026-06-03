@@ -9,6 +9,10 @@ plugins {
     id("kotlin-kapt")
 }
 
+repositories {
+    maven("https://jitpack.io")
+}
+
 val AAVersion = "4.5.2"
 //val SupportLibVersion = "28.0.0"
 

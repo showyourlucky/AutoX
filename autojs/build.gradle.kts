@@ -4,6 +4,10 @@ plugins {
     id("kotlin-android-extensions")
 }
 
+repositories {
+    maven("https://jitpack.io")
+}
+
 android {
     buildToolsVersion = versions.buildTool
     compileSdk = versions.compile

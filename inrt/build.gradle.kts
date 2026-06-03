@@ -47,7 +47,7 @@ android {
     }
     signingConfigs {
         if (propFile.exists()) {
-            getByName("release") {
+            create("release") {
                 storeFile = rootProject.file(properties.getProperty("storeFile"))
                 storePassword = properties.getProperty("storePassword")
                 keyAlias = properties.getProperty("keyAlias")

@@ -58,7 +58,7 @@ dependencies {
     // JDeferred
     api("org.jdeferred:jdeferred-android-aar:1.2.6")
     // RootShell
-    api("com.github.Stericson:RootShell:1.6")
+    api("com.github.Stericson:RootShell:1.4")
     // Gson
     api("com.google.code.gson:gson:2.9.1")
     // log4j

@@ -8,14 +8,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Set output
-        id: vars
-        run: echo "short_ref=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
       - name: checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: set up JDK 15
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v4
         with:
+          distribution: 'temurin'
           java-version: 15
       - name: Create sign.properties
         run: |
@@ -35,15 +33,9 @@ jobs:
           ls app/src/main/assets
       - name: Build App
         run: ./gradlew app:assembleV6
-      - name: create-gh-release
-        if: github.repository == 'kkevsekk1/AutoX'
-        uses: taiki-e/create-gh-release-action@v1
-        with:
-          changelog: CHANGELOG.md
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           files: 'app/build/outputs/apk/v6/release/**'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

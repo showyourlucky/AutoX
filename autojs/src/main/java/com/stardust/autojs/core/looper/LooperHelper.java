@@ -27,4 +27,12 @@ public class LooperHelper {
         if (looper != null && looper != Looper.getMainLooper())
             looper.quit();
     }
+
+    /**
+     * 仅从映射中移除指定线程的 Looper 记录，不退出 Looper
+     * 用于 Loopers.recycle() 中清理静态 Map 残留，避免内存泄漏
+     */
+    public static void removeForThread(Thread thread) {
+        sLoopers.remove(thread);
+    }
 }

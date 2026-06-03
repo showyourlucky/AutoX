@@ -24,4 +24,10 @@ class WebViewFragment : Fragment() {
         }
     }
 
+    override fun onDestroyView() {
+        // 销毁 WebView 释放 native 资源，避免泄漏 Activity Context
+        swipeRefreshWebView.destroyWebView()
+        super.onDestroyView()
+    }
+
 }

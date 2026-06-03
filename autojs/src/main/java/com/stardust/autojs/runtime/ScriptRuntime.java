@@ -491,10 +491,12 @@ public class ScriptRuntime {
             PrintWriter writer = new PrintWriter(stringWriter);
             e.printStackTrace(writer);
             writer.close();
-            BufferedReader bufferedReader = new BufferedReader(new StringReader(stringWriter.toString()));
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                scriptTrace.append("\n").append(line);
+            // 使用 try-with-resources 确保 BufferedReader 被正确关闭
+            try (BufferedReader bufferedReader = new BufferedReader(new StringReader(stringWriter.toString()))) {
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    scriptTrace.append("\n").append(line);
+                }
             }
             return scriptTrace.toString();
         } catch (IOException e1) {

@@ -24,4 +24,8 @@ jobs:
         with:
           version: 1.6.20
       - name: Build with Gradle
-        run: chmod 777 ./gradlew && ./gradlew :inrt:assemble &&  ./gradlew inrt:cp2APP && ./gradlew :app:assembleRelease
+        run: |
+          chmod 777 ./gradlew
+          ./gradlew inrt:assembleTemplateDebug
+          ./gradlew inrt:cp2APPDebug
+          ./gradlew app:assembleV6Debug

@@ -72,7 +72,8 @@ public class InputEventObserver {
     private Shell mShell;
 
     public InputEventObserver(Context context) {
-        mContext = context;
+        // 使用 Application Context 避免静态单例持有 Activity 导致内存泄漏
+        mContext = context.getApplicationContext();
     }
 
     public static InputEventObserver getGlobal(Context context) {

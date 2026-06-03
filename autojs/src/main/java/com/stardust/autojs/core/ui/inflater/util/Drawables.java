@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat;
 import com.stardust.app.GlobalAppContext;
 import com.stardust.autojs.core.ui.inflater.ImageLoader;
 
+import java.io.InputStream;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -96,11 +97,34 @@ public class Drawables {
         } else if (value.startsWith("data:")) {
             loadDataInto(view, value);
         } else {
+            // 设置新 Drawable 前回收旧 Drawable 持有的 Bitmap，避免 native 内存泄漏
+            recycleOldBitmap(view);
             view.setImageDrawable(parse(view, value));
         }
     }
 
+    /**
+     * 回收 ImageView 中旧 Drawable 持有的 Bitmap
+     */
+    private void recycleOldBitmap(ImageView view) {
+        Drawable oldDrawable = view.getDrawable();
+        if (oldDrawable instanceof BitmapDrawable) {
+            Bitmap oldBitmap = ((BitmapDrawable) oldDrawable).getBitmap();
+            if (oldBitmap != null && !oldBitmap.isRecycled()) {
+                oldBitmap.recycle();
+            }
+        }
+    }
+
     private void loadDataInto(ImageView view, String data) {
+        // 【修复】设置新 Bitmap 前回收旧 Drawable 持有的 Bitmap
+        Drawable oldDrawable = view.getDrawable();
+        if (oldDrawable instanceof BitmapDrawable) {
+            Bitmap oldBitmap = ((BitmapDrawable) oldDrawable).getBitmap();
+            if (oldBitmap != null && !oldBitmap.isRecycled()) {
+                oldBitmap.recycle();
+            }
+        }
         Bitmap bitmap = loadBase64Data(data);
         view.setImageBitmap(bitmap);
     }
@@ -152,10 +176,16 @@ public class Drawables {
 
         @Override
         public Drawable load(View view, Uri uri) {
+            // 【修复】关闭 InputStream 避免连接泄漏
             try {
                 URL url = new URL(uri.toString());
-                Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                return new BitmapDrawable(view.getResources(), bmp);
+                InputStream is = url.openConnection().getInputStream();
+                try {
+                    Bitmap bmp = BitmapFactory.decodeStream(is);
+                    return new BitmapDrawable(view.getResources(), bmp);
+                } finally {
+                    is.close();
+                }
             } catch (Exception e) {
                 return null;
             }
@@ -168,11 +198,17 @@ public class Drawables {
 
         @Override
         public void load(final View view, final Uri uri, final BitmapCallback callback) {
+            // 【修复】关闭 InputStream 避免后台线程连接泄漏
             new Thread(() -> {
                 try {
                     URL url = new URL(uri.toString());
-                    final Bitmap bmp = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                    view.post(() -> callback.onLoaded(bmp));
+                    InputStream is = url.openConnection().getInputStream();
+                    try {
+                        final Bitmap bmp = BitmapFactory.decodeStream(is);
+                        view.post(() -> callback.onLoaded(bmp));
+                    } finally {
+                        is.close();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

@@ -197,7 +197,8 @@ class BuildViewModel(private val app: Application, private var source: String) :
         }
     ) {
         syncToProjectConfig()
-        CoroutineScope(Dispatchers.Main).launch {
+        // 使用 viewModelScope 替代裸 CoroutineScope，确保协程随 ViewModel 销毁而取消
+        viewModelScope.launch {
             writeProjectConfigAndRefreshView()
             onCompletion()
         }
@@ -561,7 +562,8 @@ class BuildViewModel(private val app: Application, private var source: String) :
 
 
     fun buildApk() {
-        CoroutineScope(Dispatchers.Main).launch {
+        // 使用 viewModelScope 替代裸 CoroutineScope，确保协程随 ViewModel 销毁而取消
+        viewModelScope.launch {
             syncToProjectConfig()
             doBuildingApk()
         }

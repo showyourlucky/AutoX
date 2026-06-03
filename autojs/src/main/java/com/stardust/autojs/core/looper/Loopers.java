@@ -171,8 +171,12 @@ public class Loopers implements MessageQueue.IdleHandler {
     }
 
     public void recycle() {
+        // 【修复】清理 Handler 待处理消息，避免脚本退出后消息残留阻止 GC
+        mMainHandler.removeCallbacksAndMessages(null);
         quitServantLooper();
         mMainMessageQueue.removeIdleHandler(this);
+        // 清理 LooperHelper 中当前线程的映射，避免 Thread -> Looper 残留在静态 Map 中
+        LooperHelper.removeForThread(Thread.currentThread());
     }
 
     public void setMainLooperQuitHandler(LooperQuitHandler mainLooperQuitHandler) {

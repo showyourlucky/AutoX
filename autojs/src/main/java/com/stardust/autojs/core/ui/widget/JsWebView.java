@@ -49,4 +49,12 @@ public class JsWebView extends WebView {
         setWebChromeClient(new WebChromeClient());
     }
 
+    @Override
+    protected void onDetachedFromWindow() {
+        // WebView 销毁前先加载空白页释放渲染资源，再清理子视图，最后销毁
+        loadUrl("about:blank");
+        removeAllViews();
+        destroy();
+        super.onDetachedFromWindow();
+    }
 }

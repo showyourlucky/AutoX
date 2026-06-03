@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -254,28 +255,41 @@ public class UpdateUtil {
         IntentUtil.installApkOrToast(mContext, apkfile.getPath(),AUTHORITY);
     }
 
-    Handler handler = new Handler() {
+    // 【修复】使用静态内部类 + WeakReference 避免 Handler 隐式持有外部类导致内存泄漏
+    private static class SafeHandler extends Handler {
+        private final WeakReference<UpdateUtil> mRef;
+
+        SafeHandler(UpdateUtil util) {
+            mRef = new WeakReference<>(util);
+        }
+
         @Override
         public void handleMessage(Message msg) {
+            UpdateUtil util = mRef.get();
+            if (util == null) return;
             switch (msg.what) {
                 case SHOW_NOTICE_DIALOG:
-                    showNoticeDialog();
+                    util.showNoticeDialog();
                     break;
                 case START_DOWNLOAD_APK:
-                    downloadApk();
+                    util.downloadApk();
                     break;
                 case DOWNLOAD:
                     // 设置进度条位置
-                    mProgress.setProgress(progress);
+                    if (util.mProgress != null) {
+                        util.mProgress.setProgress(util.progress);
+                    }
                     break;
                 case DOWNLOAD_FINISH:
                     // 安装文件
-                    installApk();
+                    util.installApk();
                     break;
                 default:
                     break;
             }
             super.handleMessage(msg);
         }
-    };
+    }
+
+    Handler handler = new SafeHandler(this);
 }

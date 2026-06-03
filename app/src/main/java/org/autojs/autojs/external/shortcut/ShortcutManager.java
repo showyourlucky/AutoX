@@ -26,8 +26,9 @@ public class ShortcutManager {
 
 
     public ShortcutManager(Context context) {
-        mContext = context;
-        mShortcutManager = (android.content.pm.ShortcutManager) context.getSystemService(Context.SHORTCUT_SERVICE);
+        // 使用 Application Context 避免单例持有 Activity Context 导致内存泄漏
+        mContext = context.getApplicationContext();
+        mShortcutManager = (android.content.pm.ShortcutManager) mContext.getSystemService(Context.SHORTCUT_SERVICE);
     }
 
     public static ShortcutManager getInstance(Context context) {

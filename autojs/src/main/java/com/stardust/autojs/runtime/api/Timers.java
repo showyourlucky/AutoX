@@ -90,6 +90,8 @@ public class Timers {
 
     public void recycle() {
         mMainTimer.removeAllCallbacks();
+        // 回收 UI Timer，避免主线程消息队列中残留的 Runnable 阻止 ScriptRuntime 被 GC
+        mUiTimer.removeAllCallbacks();
     }
 
 }

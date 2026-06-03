@@ -78,6 +78,7 @@ import java.util.List;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -127,6 +128,8 @@ public class EditorView extends FrameLayout implements CodeCompletionBar.OnHintC
     private int mScriptExecutionId;
     private AutoCompletion mAutoCompletion;
     private Theme mEditorTheme;
+    // 管理 RxJava 订阅，View detach 时统一取消，避免泄漏
+    private final CompositeDisposable mCompositeDisposable = new CompositeDisposable();
     private FunctionsKeyboardHelper mFunctionsKeyboardHelper;
     private BroadcastReceiver mOnRunFinishedReceiver = new BroadcastReceiver() {
         @Override
@@ -183,6 +186,8 @@ public class EditorView extends FrameLayout implements CodeCompletionBar.OnHintC
         if (getContext() instanceof BackPressedHandler.HostActivity) {
             ((BackPressedHandler.HostActivity) getContext()).getBackPressedObserver().unregisterHandler(mFunctionsKeyboardHelper);
         }
+        // 取消所有 RxJava 订阅，避免 View detach 后回调持有引用导致泄漏
+        mCompositeDisposable.clear();
     }
 
     public Uri getUri() {
@@ -415,8 +420,10 @@ public class EditorView extends FrameLayout implements CodeCompletionBar.OnHintC
 
     @SuppressLint("CheckResult")
     public void runAndSaveFileIfNeeded() {
-        save().observeOn(AndroidSchedulers.mainThread())
-                .subscribe(s -> run(true), Observers.toastMessage());
+        mCompositeDisposable.add(
+            save().observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(s -> run(true), Observers.toastMessage())
+        );
     }
 
     public ScriptExecution run(boolean showMessage) {
@@ -473,12 +480,14 @@ public class EditorView extends FrameLayout implements CodeCompletionBar.OnHintC
 
     @SuppressLint("CheckResult")
     public void saveFile() {
-        save()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(Observers.emptyConsumer(), e -> {
-                    e.printStackTrace();
-                    Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+        mCompositeDisposable.add(
+            save()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(Observers.emptyConsumer(), e -> {
+                        e.printStackTrace();
+                        Toast.makeText(getContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                    })
+        );
     }
 
     void findNext() {

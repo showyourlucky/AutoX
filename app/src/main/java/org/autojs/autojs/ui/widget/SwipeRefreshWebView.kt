@@ -46,6 +46,16 @@ class SwipeRefreshWebView : ThemeColorSwipeRefreshLayout {
         return super.dispatchKeyEvent(event)
     }
 
+    /**
+     * 销毁 WebView，释放 JavaScript 引擎、渲染线程等 native 资源
+     * 必须在 Fragment/Activity 销毁时调用，避免泄漏 Activity Context
+     */
+    fun destroyWebView() {
+        webView.loadUrl("about:blank")
+        webView.removeAllViews()
+        webView.destroy()
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun WebView.setup() {
         settings.apply {

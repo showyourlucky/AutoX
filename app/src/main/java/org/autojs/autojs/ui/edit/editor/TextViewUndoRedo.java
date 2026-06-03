@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.Selection;
 import android.text.TextWatcher;
@@ -47,7 +48,7 @@ public class TextViewUndoRedo {
 
     private int mInitialHistoryStackSize;
 
-    private Handler mHandler = new Handler();
+    private Handler mHandler = new Handler(Looper.getMainLooper());
     private int mTextChangeId = 0;
     private boolean mTextChanging = false;
 

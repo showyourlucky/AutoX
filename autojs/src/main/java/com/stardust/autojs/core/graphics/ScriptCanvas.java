@@ -63,7 +63,21 @@ public class ScriptCanvas {
     }
 
     public void setBitmap(@Nullable Bitmap bitmap) {
+        // 【修复】设置新 Bitmap 前回收旧 Bitmap，避免 native 内存泄漏
+        if (mBitmap != null && mBitmap != bitmap && !mBitmap.isRecycled()) {
+            mBitmap.recycle();
+        }
+        mBitmap = bitmap;
         mCanvas.setBitmap(bitmap);
+    }
+
+    // 【修复】添加回收方法，释放 Bitmap native 内存
+    public void recycle() {
+        if (mBitmap != null && !mBitmap.isRecycled()) {
+            mBitmap.recycle();
+            mBitmap = null;
+        }
+        mCanvas = null;
     }
 
     public boolean isOpaque() {

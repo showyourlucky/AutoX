@@ -37,7 +37,6 @@ import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,7 +68,8 @@ public class Images {
     public Images(Context context, ScriptRuntime scriptRuntime, ScreenCaptureRequester screenCaptureRequester) {
         mScriptRuntime = scriptRuntime;
         mScreenCaptureRequester = screenCaptureRequester;
-        mContext = context;
+        // 使用 Application Context 避免持有 Activity Context 导致内存泄漏
+        mContext = context.getApplicationContext();
         mScreenMetrics = mScriptRuntime.getScreenMetrics();
         colorFinder = new ColorFinder(mScreenMetrics);
     }
@@ -135,8 +135,10 @@ public class Images {
         if (compressFormat == null)
             throw new IllegalArgumentException("unknown format " + format);
         Bitmap bitmap = image.getBitmap();
-        FileOutputStream outputStream = new FileOutputStream(mScriptRuntime.files.path(path));
-        return bitmap.compress(compressFormat, quality, outputStream);
+        // 【修复】使用 try-with-resources 确保流关闭，避免文件描述符泄漏
+        try (FileOutputStream outputStream = new FileOutputStream(mScriptRuntime.files.path(path))) {
+            return bitmap.compress(compressFormat, quality, outputStream);
+        }
     }
 
     public static int pixel(ImageWrapper image, int x, int y) {
@@ -174,16 +176,19 @@ public class Images {
             canvas.drawBitmap(img1.getBitmap(), (width - img1.getWidth()) / 2, 0, paint);
             canvas.drawBitmap(img2.getBitmap(), (width - img2.getWidth()) / 2, img1.getHeight(), paint);
         }
+        // 注意：返回新 Bitmap，调用方若不再需要原 img1/img2 应主动调用 recycle() 避免内存增长
         return ImageWrapper.ofBitmap(bitmap);
     }
 
     public ImageWrapper rotate(ImageWrapper img, float x, float y, float degree) {
         Matrix matrix = new Matrix();
         matrix.postRotate(degree, x, y);
+        // 注意：返回新 Bitmap，调用方若不再需要原 img 应主动调用 img.recycle() 避免内存增长
         return ImageWrapper.ofBitmap(Bitmap.createBitmap(img.getBitmap(), 0, 0, img.getWidth(), img.getHeight(), matrix, true));
     }
 
     public ImageWrapper clip(ImageWrapper img, int x, int y, int w, int h) {
+        // 注意：返回新 Bitmap，调用方若不再需要原 img 应主动调用 img.recycle() 避免内存增长
         return ImageWrapper.ofBitmap(Bitmap.createBitmap(img.getBitmap(), x, y, w, h));
     }
 
@@ -206,9 +211,18 @@ public class Images {
         if (compressFormat == null)
             throw new IllegalArgumentException("unknown format " + format);
         Bitmap bitmap = wrapper.getBitmap();
+        // 【修复】使用 try-finally 确保流关闭（ByteArrayOutputStream 无系统资源，但保持一致风格）
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        bitmap.compress(compressFormat, quality, outputStream);
-        return outputStream.toByteArray();
+        try {
+            bitmap.compress(compressFormat, quality, outputStream);
+            return outputStream.toByteArray();
+        } finally {
+            try {
+                outputStream.close();
+            } catch (IOException ignored) {
+                // ByteArrayOutputStream.close() 不会抛异常，此处仅为编译器满足
+            }
+        }
     }
 
     public ImageWrapper fromBytes(byte[] bytes) {
@@ -229,23 +243,34 @@ public class Images {
     }
 
     public ImageWrapper load(String src) {
+        // 【修复】使用 try-finally 确保 InputStream 和 HttpURLConnection 关闭
+        HttpURLConnection connection = null;
         try {
             URL url = new URL(src);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setDoInput(true);
             connection.connect();
             InputStream input = connection.getInputStream();
-            Bitmap bitmap = BitmapFactory.decodeStream(input);
-            return ImageWrapper.ofBitmap(bitmap);
+            try {
+                Bitmap bitmap = BitmapFactory.decodeStream(input);
+                return ImageWrapper.ofBitmap(bitmap);
+            } finally {
+                input.close();
+            }
         } catch (IOException e) {
             return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
     public static void saveBitmap(Bitmap bitmap, String path) {
-        try {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(path));
-        } catch (FileNotFoundException e) {
+        // 【修复】使用 try-with-resources 确保流关闭
+        try (FileOutputStream outputStream = new FileOutputStream(path)) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
@@ -267,6 +292,16 @@ public class Images {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && mScreenCapturer != null) {
             mScreenCapturer.release();
         }
+    }
+
+    // 【修复】添加缓存清理方法，脚本退出时应调用以释放截屏缓存 Bitmap
+    public void recycle() {
+        if (mPreCaptureImage != null) {
+            mPreCaptureImage.recycle();
+            mPreCaptureImage = null;
+        }
+        mPreCapture = null;
+        releaseScreenCapturer();
     }
 
     public Point findImage(ImageWrapper image, ImageWrapper template) {

@@ -24,10 +24,14 @@ public class Media implements MediaScannerConnection.MediaScannerConnectionClien
     public Media(Context context, ScriptRuntime runtime) {
         mScannerConnection = new MediaScannerConnection(context, this);
         mRuntime = runtime;
-        mScannerConnection.connect();
+        // 延迟到首次 scanFile 时再 connect，避免构造时立即连接但 recycle() 因异常未调用时连接残留
     }
 
     public void scanFile(String path) {
+        // 首次使用时才连接 MediaScannerConnection
+        if (!mScannerConnection.isConnected()) {
+            mScannerConnection.connect();
+        }
         String mimeType = MimeTypes.fromFileOr(path, null);
         mScannerConnection.scanFile(mRuntime.files.path(path), mimeType);
     }

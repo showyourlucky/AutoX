@@ -2,6 +2,7 @@ package org.autojs.autojs.ui.edit.toolbar;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 import android.text.TextUtils;
@@ -65,7 +66,7 @@ public class DebugToolbarFragment extends ToolbarFragment implements DebugCallba
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mHandler = new Handler();
+        mHandler = new Handler(Looper.getMainLooper());
     }
 
     @Override
@@ -275,6 +276,10 @@ public class DebugToolbarFragment extends ToolbarFragment implements DebugCallba
     @Override
     public void onDestroy() {
         super.onDestroy();
+        // 清理 Handler 消息队列，避免残留消息持有 Fragment 引用导致泄漏
+        if (mHandler != null) {
+            mHandler.removeCallbacksAndMessages(null);
+        }
         if (mEditorView == null) {
             return;
         }

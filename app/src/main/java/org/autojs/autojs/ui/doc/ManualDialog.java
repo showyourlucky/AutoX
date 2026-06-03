@@ -69,9 +69,23 @@ public class ManualDialog {
         return this;
     }
 
+    /**
+     * 关闭对话框并清理 WebView 资源，避免泄漏 Activity Context
+     */
+    public void dismiss() {
+        if (mDialog != null && mDialog.isShowing()) {
+            mDialog.dismiss();
+        }
+        if (mEWebView != null) {
+            mEWebView.getWebView().loadUrl("about:blank");
+            mEWebView.getWebView().removeAllViews();
+            mEWebView.getWebView().destroy();
+        }
+    }
+
     @OnClick(R.id.close)
     void close() {
-        mDialog.dismiss();
+        dismiss();
     }
 
     @OnClick(R.id.fullscreen)

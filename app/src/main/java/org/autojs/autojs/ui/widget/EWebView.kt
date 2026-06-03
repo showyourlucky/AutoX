@@ -767,23 +767,18 @@ open class EWebView : FrameLayout, SwipeRefreshLayout.OnRefreshListener,
     }
 
     fun readAssetsTxt(context: Context, fileName: String): String? {
-        try {
-            //Return an AssetManager instance for your application's package
-            val `is`: InputStream = context.assets.open("$fileName")
-            val size: Int = `is`.available()
-
-            val buffer = ByteArray(size)
-            `is`.read(buffer)
-            `is`.close()
-
-
-            return String(buffer, Charsets.UTF_8)
+        return try {
+            // 使用 use {} 块确保 InputStream 在读取完成后或异常时都被正确关闭
+            context.assets.open(fileName).use { inputStream ->
+                val size = inputStream.available()
+                val buffer = ByteArray(size)
+                inputStream.read(buffer)
+                String(buffer, Charsets.UTF_8)
+            }
         } catch (e: IOException) {
-
-
             e.message?.let { Log.e("", it) }
+            "读取错误，请检查文件名"
         }
-        return "读取错误，请检查文件名"
     }
 
 }

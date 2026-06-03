@@ -60,7 +60,8 @@ public class ScreenCapturer {
     private OrientationEventListener mOrientationEventListener;
 
     public ScreenCapturer(Context context, Intent data, int orientation, int screenDensity, Handler handler) {
-        mContext = context;
+        // 使用 Application Context 避免持有 Activity Context 导致内存泄漏
+        mContext = context.getApplicationContext();
         mData = data;
         mScreenDensity = screenDensity;
         mHandler = handler;
@@ -209,6 +210,8 @@ public class ScreenCapturer {
         if (mOrientationEventListener != null) {
             mOrientationEventListener.disable();
         }
+        // 释放 Context 引用，避免延迟 GC 时仍持有
+        mContext = null;
     }
 
     @Override

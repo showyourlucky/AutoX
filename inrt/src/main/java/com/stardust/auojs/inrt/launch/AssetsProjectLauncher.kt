@@ -29,9 +29,11 @@ import java.io.IOException
 
 open class AssetsProjectLauncher(
     private val assetsProjectDir: String,
-    private val context: Context
+    context: Context
 ) {
-    private val mProjectDir: String = File(context.filesDir, "project/").path
+    // 使用 Application Context 避免通过 GlobalProjectLauncher 单例持有 Activity Context
+    private val context: Context = context.applicationContext
+    private val mProjectDir: String = File(this.context.filesDir, "project/").path
     private val mProjectConfig =
         ProjectConfig.fromAssets(context, ProjectConfig.configFileOfDir(assetsProjectDir))!!
     private val mMainScriptFile: File = File(mProjectDir, mProjectConfig.mainScript!!)

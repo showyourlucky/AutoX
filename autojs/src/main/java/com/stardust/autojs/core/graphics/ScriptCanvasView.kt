@@ -159,7 +159,9 @@ class ScriptCanvasView(context: Context, private val mScriptRuntime: ScriptRunti
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
         mDrawing = false
-        mDrawingThreadPool?.shutdown()
+        // 使用 shutdownNow() 强制终止绘图线程，避免卡在 lockCanvas() 或 sleep() 的线程无法退出
+        mDrawingThreadPool?.shutdownNow()
+        mDrawingThreadPool = null
         Log.d(LOG_TAG, "onSurfaceTextureDestroyed: ${this}")
         return true
     }

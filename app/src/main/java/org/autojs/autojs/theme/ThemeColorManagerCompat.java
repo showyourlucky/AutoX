@@ -54,10 +54,11 @@ public class ThemeColorManagerCompat {
     }
 
     public static void init(Context context, ThemeColor defaultThemeColor) {
-        sContext = context;
-        sSharedPreferences = context.getSharedPreferences("theme_color", Context.MODE_PRIVATE);
+        // 【修复】使用 Application Context 避免持有 Activity 引用导致泄漏
+        sContext = context.getApplicationContext();
+        sSharedPreferences = sContext.getSharedPreferences("theme_color", Context.MODE_PRIVATE);
         ThemeColorManager.setDefaultThemeColor(defaultThemeColor);
-        ThemeColorManager.init(context);
-        PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(sPreferenceChangeListener);
+        ThemeColorManager.init(sContext);
+        PreferenceManager.getDefaultSharedPreferences(sContext).registerOnSharedPreferenceChangeListener(sPreferenceChangeListener);
     }
 }

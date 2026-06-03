@@ -3,6 +3,7 @@ package org.autojs.autojs.ui.edit;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Handler;
+import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -42,7 +43,7 @@ public class ClassSearchDialogBuilder extends ThemeColorMaterialDialogBuilder {
 
     public ClassSearchDialogBuilder(@NonNull Context context) {
         super(new ContextThemeWrapper(context, R.style.AppTheme));
-        mHandler = new Handler();
+        mHandler = new Handler(Looper.getMainLooper());
         initViews(getContext());
         AndroidClassIndices.getInstance(getContext());
     }

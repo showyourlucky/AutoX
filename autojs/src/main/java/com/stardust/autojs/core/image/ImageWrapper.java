@@ -87,7 +87,10 @@ public class ImageWrapper {
         if (rowPadding == 0) {
             return bitmap;
         }
-        return Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight());
+        // 【修复】裁剪后回收含 padding 的临时 Bitmap，避免每次调用泄漏一个完整尺寸 Bitmap
+        Bitmap cropped = Bitmap.createBitmap(bitmap, 0, 0, image.getWidth(), image.getHeight());
+        bitmap.recycle();
+        return cropped;
     }
 
     public int getWidth() {
@@ -100,6 +103,11 @@ public class ImageWrapper {
         return mHeight;
     }
 
+    /**
+     * 获取 OpenCV Mat 对象（惰性创建）。
+     * 注意：Mat 的 native 内存仅在 {@link #recycle()} 被调用时释放，
+     * 调用方必须确保在不再使用时调用 recycle() 以避免 native 内存泄漏。
+     */
     public Mat getMat() {
         ensureNotRecycled();
         if (mMat == null && mBitmap != null) {
@@ -112,9 +120,10 @@ public class ImageWrapper {
     public void saveTo(String path) {
         ensureNotRecycled();
         if (mBitmap != null) {
-            try {
-                mBitmap.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(path));
-            } catch (FileNotFoundException e) {
+            // 【修复】使用 try-with-resources 确保流关闭
+            try (FileOutputStream outputStream = new FileOutputStream(path)) {
+                mBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+            } catch (java.io.IOException e) {
                 throw new UncheckedIOException(e);
             }
         } else {

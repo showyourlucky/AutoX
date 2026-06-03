@@ -492,7 +492,8 @@ private fun ConnectComputerDialog(
 private fun connectServer(
     url: String,
 ) {
-    GlobalScope.launch { DevPlugin.connect(url) }
+    // 使用 Dispatchers.IO 替代 GlobalScope，避免协程泄漏
+    CoroutineScope(Dispatchers.IO).launch { DevPlugin.connect(url) }
 }
 
 private fun getUrl(host: String): String {

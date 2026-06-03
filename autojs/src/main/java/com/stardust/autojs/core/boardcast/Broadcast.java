@@ -18,6 +18,13 @@ public class Broadcast {
         return sEventEmitters.remove(eventEmitter);
     }
 
+    /**
+     * 清理所有监听器，防止异常路径下 BroadcastEmitter 残留在静态列表中导致内存泄漏
+     */
+    public static void clearAll() {
+        sEventEmitters.clear();
+    }
+
     public static void send(String eventName, Object[] args) {
         for (BroadcastEmitter emitter : sEventEmitters) {
             emitter.onBroadcast(eventName, args);

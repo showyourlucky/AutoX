@@ -21,6 +21,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.stardust.pio.PFiles
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import org.autojs.autoxjs.R
 import org.autojs.autojs.model.explorer.*
@@ -55,6 +56,8 @@ open class ExplorerViewKt : ThemeColorSwipeRefreshLayout, OnRefreshListener,
     private var filter: ((ExplorerItem) -> Boolean)? = null
     protected var selectedItem: ExplorerItem? = null
     private var explorer: Explorer? = null
+    // 管理 RxJava 订阅，View detach 时统一取消，避免泄漏
+    private val compositeDisposable = CompositeDisposable()
     private val pageStateHistory = Stack<ExplorerPageState>()
     private var currentPageState = ExplorerPageState()
     private var dirSortMenuShowing = false
@@ -217,27 +220,29 @@ open class ExplorerViewKt : ThemeColorSwipeRefreshLayout, OnRefreshListener,
     @SuppressLint("CheckResult", "NotifyDataSetChanged")
     private fun loadItemList() {
         isRefreshing = true
-        explorer!!.fetchChildren(currentPageState.currentPage)
-            .subscribeOn(Schedulers.io())
-            .flatMapObservable { page: ExplorerPage? ->
-                currentPageState.currentPage = page
-                Observable.fromIterable(page)
-            }
-            .filter { f: ExplorerItem -> if (filter == null) true else filter!!.invoke(f) }
-            .collectInto(explorerItemList.cloneConfig()) { obj: ExplorerItemList, item: ExplorerItem? ->
-                obj.add(
-                    item
-                )
-            }
-            .observeOn(Schedulers.computation())
-            .doOnSuccess { obj: ExplorerItemList -> obj.sort() }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe { list: ExplorerItemList ->
-                explorerItemList = list
-                explorerAdapter.notifyDataSetChanged()
-                isRefreshing = false
-                post { explorerItemListView!!.scrollToPosition(currentPageState.scrollY) }
-            }
+        compositeDisposable.add(
+            explorer!!.fetchChildren(currentPageState.currentPage)
+                .subscribeOn(Schedulers.io())
+                .flatMapObservable { page: ExplorerPage? ->
+                    currentPageState.currentPage = page
+                    Observable.fromIterable(page)
+                }
+                .filter { f: ExplorerItem -> if (filter == null) true else filter!!.invoke(f) }
+                .collectInto(explorerItemList.cloneConfig()) { obj: ExplorerItemList, item: ExplorerItem? ->
+                    obj.add(
+                        item
+                    )
+                }
+                .observeOn(Schedulers.computation())
+                .doOnSuccess { obj: ExplorerItemList -> obj.sort() }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe { list: ExplorerItemList ->
+                    explorerItemList = list
+                    explorerAdapter.notifyDataSetChanged()
+                    isRefreshing = false
+                    post { explorerItemListView!!.scrollToPosition(currentPageState.scrollY) }
+                }
+        )
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -348,20 +353,22 @@ open class ExplorerViewKt : ThemeColorSwipeRefreshLayout, OnRefreshListener,
     @SuppressLint("CheckResult", "NotifyDataSetChanged")
     private fun sort(sortType: Int, isDir: Boolean) {
         isRefreshing = true
-        Observable.fromCallable {
-            if (isDir) {
-                explorerItemList.sortItemGroup(sortType)
-            } else {
-                explorerItemList.sortFile(sortType)
+        compositeDisposable.add(
+            Observable.fromCallable {
+                if (isDir) {
+                    explorerItemList.sortItemGroup(sortType)
+                } else {
+                    explorerItemList.sortFile(sortType)
+                }
+                explorerItemList
             }
-            explorerItemList
-        }
-            .subscribeOn(Schedulers.computation())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe {
-                explorerAdapter.notifyDataSetChanged()
-                isRefreshing = false
-            }
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    explorerAdapter.notifyDataSetChanged()
+                    isRefreshing = false
+                }
+        )
     }
 
     override fun onAttachedToWindow() {
@@ -372,6 +379,8 @@ open class ExplorerViewKt : ThemeColorSwipeRefreshLayout, OnRefreshListener,
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         explorer!!.unregisterChangeListener(this)
+        // 取消所有 RxJava 订阅，避免 View detach 后回调持有引用导致泄漏
+        compositeDisposable.clear()
     }
 
     protected open fun onCreateViewHolder(

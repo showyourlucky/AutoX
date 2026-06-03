@@ -285,11 +285,15 @@ public class Events extends EventEmitter implements OnKeyListener, TouchObserver
         }
         if (mListeningNotification) {
             mAccessibilityBridge.getNotificationObserver().removeNotificationListener(this);
-            mAccessibilityBridge.getNotificationObserver().removeToastListener(this);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2
                     && NotificationListenerService.Companion.getInstance() != null) {
                 NotificationListenerService.Companion.getInstance().removeListener(this);
             }
+        }
+        // Toast 监听器独立注销，避免仅调用 observeToast() 而未调用 observeNotification() 时监听器残留
+        if (mListeningToast) {
+            mAccessibilityBridge.getNotificationObserver().removeToastListener(this);
+            mListeningToast = false;
         }
         if (mKeyInterceptor != null) {
             AccessibilityService service = mAccessibilityBridge.getService();
@@ -303,6 +307,11 @@ public class Events extends EventEmitter implements OnKeyListener, TouchObserver
             if (service != null) {
                 service.getGestureEventDispatcher().removeListener(this);
             }
+        }
+        // 【修复】清理 Handler 待处理消息，避免脚本退出后消息残留阻止 GC
+        if (mHandler != null) {
+            mHandler.removeCallbacksAndMessages(null);
+            mHandler = null;
         }
     }
 

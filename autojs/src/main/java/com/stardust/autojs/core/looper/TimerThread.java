@@ -50,9 +50,10 @@ public class TimerThread extends ThreadCompat {
             }
         } finally {
             onExit();
+            // 先从静态Map移除，再置null，避免 ConcurrentHashMap.remove(key,value) 匹配失败导致泄漏
+            sTimerMap.remove(Thread.currentThread());
             mTimer = null;
             org.mozilla.javascript.Context.exit();
-            sTimerMap.remove(Thread.currentThread(), mTimer);
         }
     }
 

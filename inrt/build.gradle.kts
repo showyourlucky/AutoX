@@ -7,7 +7,7 @@ plugins {
     id("kotlin-android-extensions")
 }
 
-val propFile: File = File("E:/资料/jks/autojs-inrt/sign.properties");
+val propFile: File = rootProject.file("keystores/sign.properties")
 val properties = Properties()
 if (propFile.exists()) {
     propFile.reader().use {
@@ -48,7 +48,7 @@ android {
     signingConfigs {
         if (propFile.exists()) {
             getByName("release") {
-                storeFile = file(properties.getProperty("storeFile"))
+                storeFile = rootProject.file(properties.getProperty("storeFile"))
                 storePassword = properties.getProperty("storePassword")
                 keyAlias = properties.getProperty("keyAlias")
                 keyPassword = properties.getProperty("keyPassword")

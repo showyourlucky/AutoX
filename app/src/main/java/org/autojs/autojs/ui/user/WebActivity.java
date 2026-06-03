@@ -41,4 +41,15 @@ public class WebActivity extends BaseActivity implements OnActivityResultDelegat
     public OnActivityResultDelegate.Mediator getOnActivityResultDelegateMediator() {
         return mMediator;
     }
+
+    @Override
+    protected void onDestroy() {
+        // 销毁 WebView 释放 native 资源，避免泄漏 Activity Context
+        if (mEWebView != null) {
+            mEWebView.getWebView().loadUrl("about:blank");
+            mEWebView.getWebView().removeAllViews();
+            mEWebView.getWebView().destroy();
+        }
+        super.onDestroy();
+    }
 }

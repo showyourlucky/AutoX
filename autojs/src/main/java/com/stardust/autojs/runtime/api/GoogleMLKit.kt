@@ -66,6 +66,7 @@ class GoogleMLKit {
     }
 
     fun ocr(imageWrapper: ImageWrapper, language: String): GoogleMLKitOcrResult? {
+        // 【修复】TextRecognizer 实现 Closeable，使用后必须关闭以释放 native 资源
         val textRecognizer = TextRecognition.getClient(getLanguage(language))
         var ocrResults: GoogleMLKitOcrResult? = null
         val controller = CountDownLatch(1)
@@ -83,10 +84,12 @@ class GoogleMLKit {
             }
 
         controller.await()
+        textRecognizer.close()
         return ocrResults
     }
 
     fun ocrText(imageWrapper: ImageWrapper, language: String): String {
+        // 【修复】TextRecognizer 实现 Closeable，使用后必须关闭以释放 native 资源
         val textRecognizer =
             TextRecognition.getClient(getLanguage(language))
         var ocrResults = ""
@@ -105,6 +108,7 @@ class GoogleMLKit {
             }
 
         controller.await()
+        textRecognizer.close()
         return ocrResults
     }
 

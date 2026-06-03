@@ -115,6 +115,13 @@ public class ScriptEngineService {
         ScriptRuntime.setApplicationContext(builder.mUiHandler.getContext().getApplicationContext());
     }
 
+    /**
+     * 注销 EventBus 订阅，释放 ScriptEngineService 单例对 EVENT_BUS 静态字段的引用
+     */
+    public void destroy() {
+        EVENT_BUS.unregister(this);
+    }
+
     public Console getGlobalConsole() {
         return mGlobalConsole;
     }

@@ -12,7 +12,7 @@ plugins {
 val AAVersion = "4.5.2"
 //val SupportLibVersion = "28.0.0"
 
-val propFile: File = File("E:/资料/jks/autojs-app/sign.properties");
+val propFile: File = rootProject.file("keystores/sign.properties")
 val properties = Properties()
 if (propFile.exists()) {
     propFile.inputStream().reader().use {
@@ -67,7 +67,7 @@ android {
     signingConfigs {
         if (propFile.exists()) {
             getByName("release") {
-                storeFile = file(properties.getProperty("storeFile"))
+                storeFile = rootProject.file(properties.getProperty("storeFile"))
                 storePassword = properties.getProperty("storePassword")
                 keyAlias = properties.getProperty("keyAlias")
                 keyPassword = properties.getProperty("keyPassword")

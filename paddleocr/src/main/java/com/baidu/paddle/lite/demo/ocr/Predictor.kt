@@ -37,6 +37,8 @@ open class Predictor {
     protected var scoreThreshold = 0.1f
     var inputImage: Bitmap? = null
         set(value) {
+            // 【修复】设置新值前回收旧 Bitmap，避免副本累积泄漏
+            field?.recycle()
             field = value?.copy(Bitmap.Config.ARGB_8888, true)
         }
     var outputImage: Bitmap? = null
@@ -192,19 +194,26 @@ open class Predictor {
 
     @JavascriptInterface
     fun release() {
+        // 【修复】同时释放两个 native 指针，避免只释放一半导致泄漏
         if (mPaddlePredictorNative != null) {
             mPaddlePredictorNative!!.destroy()
             mPaddlePredictorNative = null
         }
-        isLoaded = false
-    }
-
-    fun releaseModel() {
         if (paddlePredictor != null) {
             paddlePredictor!!.destroy()
             paddlePredictor = null
         }
+        // 回收 Bitmap 资源，避免 native 内存泄漏
+        inputImage?.recycle()
+        inputImage = null
+        outputImage?.recycle()
+        outputImage = null
         isLoaded = false
+    }
+
+    fun releaseModel() {
+        // 【修复】委托给 release() 确保完整释放，避免各管一半
+        release()
         cpuThreadNum = 4
         cpuPowerMode = "LITE_POWER_HIGH"
         modelPath = ""
@@ -214,19 +223,22 @@ open class Predictor {
     protected fun loadLabel(appCtx: Context, labelPath: String?): Boolean {
         wordLabels.clear()
         wordLabels.add("black")
-        // Load word labels from file
+        // 【修复】使用 try-finally 确保 assets InputStream 关闭
         try {
             val assetsInputStream = appCtx.assets.open(labelPath!!)
-            val available = assetsInputStream.available()
-            val lines = ByteArray(available)
-            assetsInputStream.read(lines)
-            assetsInputStream.close()
-            val words = String(lines)
-            val contents = words.split("\n").toTypedArray()
-            for (content in contents) {
-                wordLabels.add(content)
+            try {
+                val available = assetsInputStream.available()
+                val lines = ByteArray(available)
+                assetsInputStream.read(lines)
+                val words = String(lines)
+                val contents = words.split("\n").toTypedArray()
+                for (content in contents) {
+                    wordLabels.add(content)
+                }
+                Log.i(TAG, "Word label size: " + wordLabels.size)
+            } finally {
+                assetsInputStream.close()
             }
-            Log.i(TAG, "Word label size: " + wordLabels.size)
         } catch (e: Exception) {
             Log.e(TAG, e.message!!)
             return false
@@ -363,6 +375,8 @@ open class Predictor {
                     + " ; Inference Time: " + inferenceTime + " ;Box Size " + results.size
         )
         drawResults(results)
+        // 【修复】回收 runModel 中的中间 Bitmap（scaleImage 已通过 drawResults 写入 outputImage）
+        scaleImage.recycle()
         return true
     }
 
@@ -385,7 +399,9 @@ open class Predictor {
             outputResultSb.append(i + 1).append(": ").append(result.label).append("\n")
         }
         outputResult = outputResultSb.toString()
-        outputImage = inputImage
+        outputImage?.recycle()
+        outputImage = inputImage?.copy(Bitmap.Config.ARGB_8888, true)
+        if (outputImage == null) return
         val canvas = Canvas(outputImage!!)
         val paintFillAlpha = Paint()
         paintFillAlpha.style = Paint.Style.FILL
@@ -508,6 +524,8 @@ open class Predictor {
             ), 0, Base64.decode(checkImgBase64, Base64.DEFAULT).size
         )
         val checkingResults = runOcr(checkingBitmap, 4)
+        // 【修复】回收校验用的临时 Bitmap
+        checkingBitmap.recycle()
         val sb = StringBuilder()
         for ((_, _, _, words) in checkingResults) {
             sb.append(words)
@@ -619,6 +637,8 @@ open class Predictor {
         end = Date()
         inferenceTime = (end.time - start.time).toFloat()
         resultList = postProcess(resultList)
+        // 【修复】回收 runOcr 中的中间 Bitmap
+        scaleImage.recycle()
         return transformData(resultList)
     }
 

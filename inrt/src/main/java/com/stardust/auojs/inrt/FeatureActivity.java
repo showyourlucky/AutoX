@@ -91,6 +91,21 @@ public class FeatureActivity extends Activity {
 
 	}
 
+	// 【修复】销毁 WebView 以释放其持有的 Activity Context 和 native 资源
+	@Override
+	protected void onDestroy() {
+		if (webView != null) {
+			webView.stopLoading();
+			webView.clearHistory();
+			webView.clearCache(true);
+			webView.loadUrl("about:blank");
+			webView.removeAllViews();
+			webView.destroy();
+			webView = null;
+		}
+		super.onDestroy();
+	}
+
 	protected class MyWebChromeClient extends WebChromeClient {
 
 		@Override

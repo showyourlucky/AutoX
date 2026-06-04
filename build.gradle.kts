@@ -16,6 +16,9 @@ buildscript {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        maven("https://maven.aliyun.com/repository/google")
+        maven("https://maven.aliyun.com/repository/central")
+        maven("https://maven.aliyun.com/repository/public")
     }
     dependencies {
         classpath("com.android.tools.build:gradle:7.2.1")
@@ -31,6 +34,16 @@ allprojects {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        //Aliyun 镜像，部分国内库（keeplive/websocket2）仅在此发布
+        maven("https://maven.aliyun.com/repository/google")
+        maven("https://maven.aliyun.com/repository/central")
+        maven("https://maven.aliyun.com/repository/public")
+    }
+    // 锁定动态版本范围，避免从所有仓库获取 maven-metadata.xml 时因 Aliyun 502 失败
+    configurations.all {
+        resolutionStrategy {
+            force("com.twofortyfouram:android-annotation:2.0.1")
+        }
     }
 //    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java){
 //        kotlinOptions{

@@ -13,14 +13,9 @@ buildscript {
 
     repositories {
         mavenLocal()
-        //官方源优先，Aliyun 作为 fallback
         google()
         mavenCentral()
         maven("https://jitpack.io")
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/central")
-        maven("https://maven.aliyun.com/repository/public")
-//        maven { url = uri("https://jitpack.io") }
     }
     dependencies {
         classpath("com.android.tools.build:gradle:7.2.1")
@@ -33,13 +28,9 @@ buildscript {
 allprojects {
     repositories {
         mavenLocal()
-        //官方源优先，Aliyun 作为 fallback
         google()
         mavenCentral()
         maven("https://jitpack.io")
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/central")
-        maven("https://maven.aliyun.com/repository/public")
     }
 //    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java){
 //        kotlinOptions{

@@ -29,6 +29,9 @@ module.exports = function (runtime, global) {
     }
 
     $cypto._input = function (input, options, callback) {
+        if (input == null || input == undefined) {
+            throw new Error("crypto: 输入数据不能为 null 或 undefined，请检查传入的密钥或数据是否有效");
+        }
         if (options.input == 'file') {
             let fis = new java.io.FileInputStream(input);
             let buffer = util.java.array('byte', 4096);
@@ -143,7 +146,7 @@ module.exports = function (runtime, global) {
             }
             throw new Error()
         }
-        return new SecretKeySpec(key.data, algorithm);
+        return new SecretKeySpec(this.data, algorithm);
     }
 
     Key.prototype.toString = function () {

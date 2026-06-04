@@ -13,13 +13,13 @@ buildscript {
 
     repositories {
         mavenLocal()
-        //首选国外镜像加快github CI
+        //官方源优先，Aliyun 作为 fallback
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        maven("https://maven.aliyun.com/repository/google")
         maven("https://maven.aliyun.com/repository/central")
-        google { url = uri("https://maven.aliyun.com/repository/google") }
-        mavenCentral { url = uri("https://maven.aliyun.com/repository/public") }
+        maven("https://maven.aliyun.com/repository/public")
 //        maven { url = uri("https://jitpack.io") }
     }
     dependencies {
@@ -33,13 +33,13 @@ buildscript {
 allprojects {
     repositories {
         mavenLocal()
-        //首选国外镜像加快github CI
+        //官方源优先，Aliyun 作为 fallback
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        maven("https://maven.aliyun.com/repository/google")
         maven("https://maven.aliyun.com/repository/central")
-        google { url = uri("https://maven.aliyun.com/repository/google") }
-        mavenCentral { url = uri("https://maven.aliyun.com/repository/public") }
+        maven("https://maven.aliyun.com/repository/public")
     }
 //    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java){
 //        kotlinOptions{
